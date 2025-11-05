@@ -56,7 +56,7 @@ app.get('/', (req, res) => {
                     if (!response.ok) throw new Error('HTTP ' + response.status + ' - Check logs');
                     const data = await response.json();
                     const statusMsg = data.status ? '<span class="success">✅ Success!</span>' : '<span class="error">❌ Failed</span>';
-                    status.innerHTML = statusMsg + \` (Platform: \${data.data?.platform || 'Unknown'})\`;
+                    status.innerHTML = statusMsg + ` (Platform: ${data.data?.platform || 'Unknown'})`;
                     result.textContent = JSON.stringify(data, null, 2);
                 } catch (error) {
                     status.innerHTML = '<span class="error">❌ Network/API Error</span>';
@@ -82,7 +82,7 @@ app.get('/', (req, res) => {
 app.use(cors());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// Universal API endpoint with TikTok Lite fix
+// Universal API endpoint (unchanged from last version)
 app.get('/api/alldl', async (req, res) => {
   const { url } = req.query;
 
@@ -90,7 +90,7 @@ app.get('/api/alldl', async (req, res) => {
     return res.json({ status: false, error: 'URL parameter required' });
   }
 
-  const platform = detectPlatform(url);
+  const platform = detectPlatform(url); // For labeling only
 
   try {
     const ytdlpPath = path.join(__dirname, 'bin/yt-dlp');
@@ -98,17 +98,10 @@ app.get('/api/alldl', async (req, res) => {
       return res.json({ status: false, error: 'Tool not installed—redeploy service' });
     }
 
-    // Universal base command
-    let command = `${ytdlpPath} --dump-json --no-download --format "best[height<=720][ext=mp4]/best[ext=mp4]/best" --no-warnings --verbose `;
+    // Universal command for ALL platforms (auto-detects, MP4 priority, handles unknowns/Twitter)
+    const command = `${ytdlpPath} --dump-json --no-download --format "best[height<=720][ext=mp4]/best[ext=mp4]/best" --no-warnings --verbose "${url}"`;
 
-    // Light TikTok fix (Lite app URLs need HTTPS skip + guest mode)
-    if (platform === 'TikTok' || url.includes('tiktok.com')) {
-      command += `--extractor-args "tiktok:skip_https=true,guest=true" `;
-    }
-
-    command += `"${url}"`;
-
-    console.log(`yt-dlp run for ${platform || 'Unknown'}: ${command}`);
+    console.log(`Universal yt-dlp run for ${platform || 'Unknown'}: ${command}`);
 
     exec(command, { timeout: 45000 }, (error, stdout, stderr) => {
       if (error || stderr || !stdout.trim()) {
