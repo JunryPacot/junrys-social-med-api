@@ -18,60 +18,44 @@ app.get('/', (req, res) => {
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Test Social Media Downloader API</title>
         <style>
-            body { font-family: Arial, sans-serif; padding: 20px; background: #f8f9fa; color: #333; max-width: 800px; margin: 0 auto; }
-            h1 { color: #007bff; text-align: center; }
-            .input-group { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-bottom: 20px; }
-            input[type="url"] { width: 100%; max-width: 500px; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; box-sizing: border-box; }
-            button { padding: 12px 24px; background: #007bff; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; transition: background 0.3s; }
+            body { font-family: Arial, sans-serif; padding: 20px; background: #f8f9fa; color: #333; }
+            h1 { color: #007bff; }
+            input[type="url"] { width: 80%; max-width: 400px; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 16px; }
+            button { padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; margin-left: 10px; }
             button:hover { background: #0056b3; }
-            pre { background: #f4f4f4; padding: 15px; border-radius: 8px; white-space: pre-wrap; font-family: monospace; max-height: 400px; overflow-y: auto; margin-top: 20px; text-align: left; }
-            .status { text-align: center; font-weight: bold; margin: 10px 0; }
-            .success { color: green; }
-            .error { color: red; }
+            pre { background: #f4f4f4; padding: 15px; border-radius: 5px; white-space: pre-wrap; font-family: monospace; max-height: 300px; overflow-y: auto; margin-top: 20px; }
         </style>
     </head>
     <body>
-        <h1>🎥 Universal Social Media Downloader API Tester</h1>
-        <p style="text-align: center;">Paste any video URL (TikTok, Facebook, Instagram, Twitter, YouTube, or even unknown links) and test extraction.</p>
-        <div class="input-group">
-            <input type="url" id="urlInput" placeholder="e.g., https://www.tiktok.com/@user/video/123 or https://twitter.com/elonmusk/status/123456">
-            <button onclick="testAPI()">Test API</button>
-        </div>
-        <div id="status" class="status"></div>
-        <pre id="result">Results will appear here... (Supports all platforms universally!)</pre>
+        <h1>🎥 Social Media Downloader API Tester</h1>
+        <p>Paste a URL from TikTok, Instagram, YouTube, etc., and click Test to see the JSON response.</p>
+        <input type="url" id="urlInput" placeholder="e.g., https://www.tiktok.com/@user/video/123456789">
+        <button onclick="testAPI()">Test API</button>
+        <pre id="result">Results will appear here...</pre>
         <script>
             async function testAPI() {
                 const input = document.getElementById('urlInput');
                 const result = document.getElementById('result');
-                const status = document.getElementById('status');
                 if (!input.value.trim()) {
-                    status.innerHTML = '<span class="error">❌ Please enter a valid URL first!</span>';
+                    result.textContent = '❌ Please enter a valid URL first!';
                     return;
                 }
-                status.innerHTML = '<span style="color: orange;">⏳ Loading... (May take 30-45s on first use)</span>';
-                result.textContent = '';
+                result.textContent = '⏳ Loading... (First request may take 30s to wake the service)';
                 try {
                     const encodedUrl = encodeURIComponent(input.value);
                     const response = await fetch('/api/alldl?url=' + encodedUrl);
-                    if (!response.ok) throw new Error('HTTP ' + response.status + ' - Check logs');
+                    if (!response.ok) throw new Error('HTTP ' + response.status);
                     const data = await response.json();
-                    const statusMsg = data.status ? '<span class="success">✅ Success!</span>' : '<span class="error">❌ Failed</span>';
-                    status.innerHTML = statusMsg + ` (Platform: ${data.data?.platform || 'Unknown'})`;
                     result.textContent = JSON.stringify(data, null, 2);
                 } catch (error) {
-                    status.innerHTML = '<span class="error">❌ Network/API Error</span>';
-                    result.textContent = 'Error Details: ' + error.message + '\\n\\nOpen DevTools (F12 > Console) for more info.';
+                    result.textContent = '❌ Error: ' + error.message + '\\n\\nCheck Render logs or try a different URL. Console (F12) for details.';
                     console.error('API Test Error:', error);
                 }
             }
-            // Pre-fill example on load
+            // Auto-test example on load (optional)
             window.onload = () => {
-                document.getElementById('urlInput').value = 'https://www.tiktok.com/@duetwithai/video/7401234567890123456';
+                document.getElementById('urlInput').value = 'https://www.tiktok.com/@lana.k.social/video/7567406030359923990';
             };
-            // Enter key support
-            document.getElementById('urlInput').addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') testAPI();
-            });
         </script>
     </body>
     </html>
@@ -82,7 +66,7 @@ app.get('/', (req, res) => {
 app.use(cors());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// Universal API endpoint (unchanged from last version)
+// Your API endpoint (unchanged)
 app.get('/api/alldl', async (req, res) => {
   const { url } = req.query;
 
@@ -90,47 +74,33 @@ app.get('/api/alldl', async (req, res) => {
     return res.json({ status: false, error: 'URL parameter required' });
   }
 
-  const platform = detectPlatform(url); // For labeling only
-
   try {
     const ytdlpPath = path.join(__dirname, 'bin/yt-dlp');
     if (!fs.existsSync(ytdlpPath)) {
       return res.json({ status: false, error: 'Tool not installed—redeploy service' });
     }
 
-    // Universal command for ALL platforms (auto-detects, MP4 priority, handles unknowns/Twitter)
-    const command = `${ytdlpPath} --dump-json --no-download --format "best[height<=720][ext=mp4]/best[ext=mp4]/best" --no-warnings --verbose "${url}"`;
+    const command = `${ytdlpPath} --dump-json --no-download "${url}"`;
 
-    console.log(`Universal yt-dlp run for ${platform || 'Unknown'}: ${command}`);
-
-    exec(command, { timeout: 45000 }, (error, stdout, stderr) => {
+    exec(command, (error, stdout, stderr) => {
       if (error || stderr || !stdout.trim()) {
-        console.error(`yt-dlp ${platform || 'Unknown'} error:`, stderr || error);
+        console.error('yt-dlp error:', stderr || error);
         return res.json({ status: false, error: 'API_REQUEST_FAILED' });
       }
 
       try {
         const videoInfo = JSON.parse(stdout.trim());
-        let videoUrl = videoInfo.url;
-        if (!videoUrl && videoInfo.formats && videoInfo.formats.length > 0) {
-          const mp4Format = videoInfo.formats.find(f => 
-            f.ext === 'mp4' && f.vcodec !== 'none' && (f.height <= 720 || !f.height)
-          );
-          videoUrl = mp4Format ? mp4Format.url : 
-                     videoInfo.formats.find(f => f.ext === 'mp4')?.url || 
-                     videoInfo.formats[0]?.url;
-        }
-        videoUrl = videoUrl || videoInfo.webpage_url || videoInfo.original_url;
+        const platform = detectPlatform(url);
+        const videoUrl = videoInfo.url || videoInfo.webpage_url || videoInfo.formats?.[0]?.url;
 
         res.json({
           status: true,
           data: {
             videoUrl: videoUrl,
-            platform: platform || 'Unknown'
+            platform: platform
           }
         });
       } catch (parseError) {
-        console.error('Parse error:', parseError);
         res.json({ status: false, error: 'Invalid video data' });
       }
     });
@@ -146,7 +116,7 @@ function detectPlatform(url) {
   if (url.includes('twitter.com') || url.includes('x.com')) return 'Twitter';
   if (url.includes('facebook.com')) return 'Facebook';
   if (url.includes('youtube.com')) return 'YouTube';
-  return 'Unknown'; // For all others (Vimeo, Dailymotion, etc.)
+  return 'Unknown';
 }
 
 app.listen(PORT, () => {
