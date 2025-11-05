@@ -8,7 +8,6 @@ const bodyParser = require('body-parser');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Inline root route with embedded test UI (no static files needed)
 app.get('/', (req, res) => {
   res.send(`
     <!DOCTYPE html>
@@ -82,7 +81,6 @@ app.get('/', (req, res) => {
 app.use(cors());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// Universal API endpoint (unchanged from last version)
 app.get('/api/alldl', async (req, res) => {
   const { url } = req.query;
 
@@ -90,7 +88,7 @@ app.get('/api/alldl', async (req, res) => {
     return res.json({ status: false, error: 'URL parameter required' });
   }
 
-  const platform = detectPlatform(url); // For labeling only
+  const platform = detectPlatform(url); 
 
   try {
     const ytdlpPath = path.join(__dirname, 'bin/yt-dlp');
@@ -98,7 +96,6 @@ app.get('/api/alldl', async (req, res) => {
       return res.json({ status: false, error: 'Tool not installed—redeploy service' });
     }
 
-    // Universal command for ALL platforms (auto-detects, MP4 priority, handles unknowns/Twitter)
     const command = `${ytdlpPath} --dump-json --no-download --format "best[height<=720][ext=mp4]/best[ext=mp4]/best" --no-warnings --verbose "${url}"`;
 
     console.log(`Universal yt-dlp run for ${platform || 'Unknown'}: ${command}`);
@@ -146,7 +143,7 @@ function detectPlatform(url) {
   if (url.includes('twitter.com') || url.includes('x.com')) return 'Twitter';
   if (url.includes('facebook.com')) return 'Facebook';
   if (url.includes('youtube.com')) return 'YouTube';
-  return 'Unknown'; // For all others (Vimeo, Dailymotion, etc.)
+  return 'Unknown'; 
 }
 
 app.listen(PORT, () => {
