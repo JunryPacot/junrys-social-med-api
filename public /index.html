@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html><head><title>Test API</title></head>
+<body>
+  <h1>Social Media Downloader API Tester</h1>
+  <input type="url" id="urlInput" placeholder="Paste social media URL"><br><br>
+  <button onclick="testAPI()">Test</button>
+  <pre id="result"></pre>
+  <script>
+    async function testAPI() {
+      const url = encodeURIComponent(document.getElementById('urlInput').value);
+      const res = await fetch(`/api/alldl?url=${url}`);
+      const data = await res.json();
+      document.getElementById('result').textContent = JSON.stringify(data, null, 2);
+    }
+  </script>
+</body></html>

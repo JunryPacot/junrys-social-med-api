@@ -1,6 +1,7 @@
 const express = require('express');
 const { exec } = require('child_process');
 const path = require('path');
+const fs = require('fs'); // Add for file check
 const cors = require('cors');
 const bodyParser = require('body-parser');
 
@@ -12,26 +13,30 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 app.get('/api/alldl', async (req, res) => {
   const { url } = req.query;
-
+  
   if (!url) {
     return res.json({ status: false, error: 'URL parameter required' });
   }
-
+  
   try {
     const ytdlpPath = path.join(__dirname, 'bin/yt-dlp');
+    if (!fs.existsSync(ytdlpPath)) {
+      return res.json({ status: false, error: 'Tool not installed—redeploy service' });
+    }
+    
     const command = `${ytdlpPath} --dump-json --no-download "${url}"`;
-
+    
     exec(command, (error, stdout, stderr) => {
-      if (error || stderr) {
-        console.error('yt-dlp error:', stderr);
-        return res.json({ status: false, error: 'API_REQUEST_FAILED' });
+      if (error || stderr || !stdout.trim()) {
+        console.error('yt-dlp error:', stderr || error);
+        return res.json({ status: false, error: 'API_REQUEST_FAILED' }); // Match old API
       }
-
+      
       try {
         const videoInfo = JSON.parse(stdout.trim());
         const platform = detectPlatform(url);
-        const videoUrl = videoInfo.url || videoInfo.webpage_url;
-
+        const videoUrl = videoInfo.url || videoInfo.webpage_url || videoInfo.formats?.[0]?.url;
+        
         res.json({
           status: true,
           data: {
@@ -44,6 +49,7 @@ app.get('/api/alldl', async (req, res) => {
       }
     });
   } catch (err) {
+    console.error(err);
     res.json({ status: false, error: 'INTERNAL_ERROR' });
   }
 });
