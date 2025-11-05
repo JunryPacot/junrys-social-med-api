@@ -1,42 +1,48 @@
 const express = require('express');
 const { exec } = require('child_process');
 const path = require('path');
-const fs = require('fs'); // Add for file check
+const fs = require('fs');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+app.use(express.static(path.join(__dirname, 'public')));
+
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public/index.html'));
+});
+
 app.use(cors());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 app.get('/api/alldl', async (req, res) => {
   const { url } = req.query;
-  
+
   if (!url) {
     return res.json({ status: false, error: 'URL parameter required' });
   }
-  
+
   try {
     const ytdlpPath = path.join(__dirname, 'bin/yt-dlp');
     if (!fs.existsSync(ytdlpPath)) {
       return res.json({ status: false, error: 'Tool not installed—redeploy service' });
     }
-    
+
     const command = `${ytdlpPath} --dump-json --no-download "${url}"`;
-    
+
     exec(command, (error, stdout, stderr) => {
       if (error || stderr || !stdout.trim()) {
         console.error('yt-dlp error:', stderr || error);
-        return res.json({ status: false, error: 'API_REQUEST_FAILED' }); // Match old API
+        return res.json({ status: false, error: 'API_REQUEST_FAILED' });
       }
-      
+
       try {
         const videoInfo = JSON.parse(stdout.trim());
         const platform = detectPlatform(url);
         const videoUrl = videoInfo.url || videoInfo.webpage_url || videoInfo.formats?.[0]?.url;
-        
+
         res.json({
           status: true,
           data: {
