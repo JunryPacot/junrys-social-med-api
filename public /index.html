@@ -1,16 +1,31 @@
 <!DOCTYPE html>
-<html><head><title>Test API</title></head>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Social Media Downloader API</title>
+    <style>body { font-family: Arial; padding: 20px; } input { width: 300px; padding: 10px; } button { padding: 10px 20px; background: #007bff; color: white; border: none; cursor: pointer; } pre { background: #f4f4f4; padding: 10px; white-space: pre-wrap; }</style>
+</head>
 <body>
-  <h1>Social Media Downloader API Tester</h1>
-  <input type="url" id="urlInput" placeholder="Paste social media URL"><br><br>
-  <button onclick="testAPI()">Test</button>
-  <pre id="result"></pre>
-  <script>
-    async function testAPI() {
-      const url = encodeURIComponent(document.getElementById('urlInput').value);
-      const res = await fetch(`/api/alldl?url=${url}`);
-      const data = await res.json();
-      document.getElementById('result').textContent = JSON.stringify(data, null, 2);
-    }
-  </script>
-</body></html>
+    <h1>Social Media Downloader API Tester</h1>
+    <input type="url" id="urlInput" placeholder="Paste TikTok, Instagram, etc. URL here"><br><br>
+    <button onclick="testAPI()">Test API</button>
+    <pre id="result"></pre>
+    <script>
+        async function testAPI() {
+            const input = document.getElementById('urlInput');
+            const result = document.getElementById('result');
+            if (!input.value) { result.textContent = 'Enter a URL first!'; return; }
+            result.textContent = 'Loading...';
+            try {
+                const url = encodeURIComponent(input.value);
+                const res = await fetch(`/api/alldl?url=${url}`);
+                const data = await res.json();
+                result.textContent = JSON.stringify(data, null, 2);
+            } catch (e) {
+                result.textContent = 'Error: ' + e.message + '\n\nCheck browser console (F12) for details.';
+            }
+        }
+    </script>
+</body>
+</html>
